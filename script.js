@@ -4,11 +4,18 @@ const noteCategory = document.querySelector('#note-category');
 const notesList = document.querySelector('#notes-list');
 const errorMessage = document.querySelector('#error-message');
 const noteCount = document.querySelector('#note-count');
+const searchInput = document.querySelector('#search-input');
+const clearAllButton = document.querySelector('#clear-all-button');
 
-let notes = [];
+const savedNotes = JSON.parse(localStorage.getItem('quicknotes') || '[]');
+let notes = Array.isArray(savedNotes) ? savedNotes : [];
 
 function categoryClass(category) {
   return `category-${category.toLowerCase()}`;
+}
+
+function saveNotes() {
+  localStorage.setItem('quicknotes', JSON.stringify(notes));
 }
 
 function render() {
@@ -22,7 +29,17 @@ function render() {
     noteCount.textContent = `You have ${notes.length} notes.`;
   }
 
-  notes.forEach((note) => {
+  const searchWords = searchInput.value.trim().toLowerCase();
+  const matchingNotes = notes.filter((note) => note.text.toLowerCase().includes(searchWords));
+
+  if (searchWords && matchingNotes.length === 0) {
+    const emptyMessage = document.createElement('li');
+    emptyMessage.textContent = 'No notes match your search.';
+    notesList.append(emptyMessage);
+    return;
+  }
+
+  matchingNotes.forEach((note) => {
     const noteItem = document.createElement('li');
     noteItem.className = `note-card ${categoryClass(note.category)}`;
 
@@ -43,6 +60,7 @@ function render() {
     deleteButton.textContent = 'Delete';
     deleteButton.addEventListener('click', () => {
       notes = notes.filter((savedNote) => savedNote.id !== note.id);
+      saveNotes();
       render();
     });
 
@@ -73,9 +91,20 @@ noteForm.addEventListener('submit', (event) => {
   };
 
   notes.push(note);
+  saveNotes();
   noteInput.value = '';
   errorMessage.textContent = '';
   render();
+});
+
+searchInput.addEventListener('input', render);
+
+clearAllButton.addEventListener('click', () => {
+  if (notes.length > 0 && confirm('Delete all notes?')) {
+    notes = [];
+    saveNotes();
+    render();
+  }
 });
 
 render();
